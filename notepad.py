@@ -11,6 +11,8 @@ class Notepad:
 
     def create_menu(self):
         menu_bar = tk.Menu(self.master)
+
+        # File menu
         file_menu = tk.Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="New", command=self.new_file)
         file_menu.add_command(label="Open", command=self.open_file)
@@ -18,6 +20,19 @@ class Notepad:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.master.quit)
         menu_bar.add_cascade(label="File", menu=file_menu)
+
+        # Edit menu
+        edit_menu = tk.Menu(menu_bar, tearoff=0)
+        edit_menu.add_command(label="Cut", command=lambda: self.text_area.event_generate("<<Cut>>"))
+        edit_menu.add_command(label="Copy", command=lambda: self.text_area.event_generate("<<Copy>>"))
+        edit_menu.add_command(label="Paste", command=lambda: self.text_area.event_generate("<<Paste>>"))
+        menu_bar.add_cascade(label="Edit", menu=edit_menu)
+
+        # View menu
+        view_menu = tk.Menu(menu_bar, tearoff=0)
+        view_menu.add_command(label="Toggle Word Wrap", command=self.toggle_word_wrap)
+        menu_bar.add_cascade(label="View", menu=view_menu)
+
         self.master.config(menu=menu_bar)
 
     def new_file(self):
@@ -37,6 +52,13 @@ class Notepad:
         if file_path:
             with open(file_path, "w") as f:
                 f.write(self.text_area.get(1.0, tk.END))
+
+    def toggle_word_wrap(self):
+        wrap_state = self.text_area.cget("wrap")
+        if wrap_state == "none":
+            self.text_area.config(wrap="word")
+        else:
+            self.text_area.config(wrap="none")
 
 root = tk.Tk()
 notepad = Notepad(root)
