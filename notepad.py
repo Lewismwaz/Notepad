@@ -1,3 +1,4 @@
+import datetime
 import tkinter as tk
 from tkinter import BOTH, END, INSERT, SEL, YES, IntVar, Menu, Radiobutton, Text, filedialog, messagebox
 from tkinter.font import Font
@@ -9,7 +10,9 @@ class Notepad:
         self.master = master
         master.title("Untitled - Notepad")
         self.master.geometry("800x440")
-        self.text_area = tk.Text(master, wrap=tk.WORD, font=("Segoe UI", 10))
+        self.bind_keys()
+        self.text_area = tk.Text(master, wrap=tk.WORD)
+        self.text_area.configure(font=("Segoe UI", 10))
         self.text_area.pack(fill=tk.BOTH, expand=1)
         self.dark_mode_var = tk.IntVar(value=0)
         self.filename = None
@@ -37,6 +40,7 @@ class Notepad:
         edit_menu.add_command(label="Cut", accelerator="Ctrl+X", command=self.cut_text)
         edit_menu.add_command(label="Copy", accelerator="Ctrl+C", command=self.copy_text)
         edit_menu.add_command(label="Paste", accelerator="Ctrl+V", command=self.paste_text)
+        edit_menu.add_command(label="Time/Date", accelerator="F5", command=self.insert_time_date) 
         menubar.add_cascade(label="Edit", menu=edit_menu)
         
 # Create the settings menu
@@ -44,7 +48,6 @@ class Notepad:
         theme_menu = tk.Menu(settings_menu, tearoff=0, borderwidth=0, activeborderwidth=0)
         theme_menu.add_radiobutton(label="Dark Theme", variable=self.dark_mode_var, value=1, command=self.apply_dark_theme)
         theme_menu.add_radiobutton(label="Light Theme", variable=self.dark_mode_var, value=0, command=self.apply_light_theme)
-        settings_menu.add_command(label="Font", command=self.open_font_dialog)
         settings_menu.add_cascade(label="Theme", menu=theme_menu)
         menubar.add_cascade(label="Settings", menu=settings_menu)
 
@@ -64,56 +67,6 @@ class Notepad:
         menu_width=menu.winfo_width()
         menu.entryconfigure(0, width=menu_width)
         
-    def open_font_dialog(self):
-        current_font = font.Font(font=self.text_area["font"])
-        font_tuple = self.custom_font_dialog(current_font)
-        if font_tuple:
-            font_family = font_tuple[0]
-            font_size = font_tuple[1]
-            font_string = f"{font_family} {font_size}"
-            self.text_area.configure(font=font_string)
-        else:
-            # Font dialog cancelled, do nothing
-            pass
-
-    def custom_font_dialog(self, current_font):
-        font_dialog = tk.Toplevel(self.master)
-        font_dialog.geometry("300x150")
-        font_dialog.title("Select Font")
-
-        font_dialog_label = tk.Label(font_dialog, text="Font Name:")
-        font_dialog_label.pack(side=tk.TOP, padx=5, pady=5)
-
-        font_name_var = tk.StringVar()
-        font_name_var.set(current_font.actual()["family"])
-        font_name_entry = tk.Entry(font_dialog, textvariable=font_name_var)
-        font_name_entry.pack(side=tk.TOP, padx=5, pady=5)
-
-        font_size_label = tk.Label(font_dialog, text="Font Size:")
-        font_size_label.pack(side=tk.TOP, padx=5, pady=5)
-
-        font_size_var = tk.StringVar()
-        font_size_var.set(current_font.actual()["size"])
-        font_size_entry = tk.Entry(font_dialog, textvariable=font_size_var)
-        font_size_entry.pack(side=tk.TOP, padx=5, pady=5)
-
-        ok_button = tk.Button(font_dialog, text="OK", command=font_dialog.destroy)
-        ok_button.pack(side=tk.BOTTOM, padx=5, pady=5)
-
-        font_dialog.transient(self.master)  # Set dialog as transient to the parent window
-        font_dialog.wait_visibility()  # Wait for the dialog window to be visible
-        font_dialog.grab_set()  # Set a grab on the dialog window to prevent interaction with the parent window
-
-        self.master.wait_window(font_dialog)  # Wait for the dialog window to be destroyed
-
-        font_family = font_name_var.get()
-        font_size = font_size_var.get()
-        font_string = f"{font_family} {font_size}"
-
-        return font_string
-
-
-
     def cut_text(self):
         self.text_area.event_generate("<<Cut>>")
 
@@ -127,14 +80,25 @@ class Notepad:
         self.text_area.tag_add(SEL, "1.0", END)
         self.text_area.mark_set(INSERT, "1.0")
         self.text_area.see(INSERT)
+
+    def insert_time_date(self, event=None):
+        current_datetime = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.text_area.insert(INSERT, current_datetime)
+
+       
+    def bind_keys(self):
+        self.master.bind("<F5>", self.insert_time_date)
+
+
         
     def create_context_menu(self):
         context_menu = tk.Menu(self.master, tearoff=0)
         context_menu.add_command(label="Cut", command=self.cut_text)
         context_menu.add_command(label="Copy", command=self.copy_text)
         context_menu.add_command(label="Paste", command=self.paste_text)
-        context_menu.add_separator()
+        #context_menu.add_separator()
         context_menu.add_command(label="Select All", command=self.select_all_text)
+        context_menu.add_command(label="Time/Date", command=self.insert_time_date)
         self.text_area.bind("<Button-3>", lambda event: context_menu.tk_popup(event.x_root, event.y_root))
 
     def new_file(self):
@@ -187,14 +151,25 @@ class Notepad:
         # Implement the logic for applying the dark theme
         # For example, you can change the background and text colors of the text area
         self.text_area.config(bg='black', fg='white')
+        self.text_area.config(cursor='xterm', insertbackground='white')
 
     def apply_light_theme(self):
         # Implement the logic for applying the light theme
         # For example, you can change the background and text colors of the text area
-        self.text_area.config(bg='white', fg='black')        
+        self.text_area.config(bg='white', fg='black')
+        self.text_area.config(cursor='arrow', insertbackground='black')
         
     def exit_notepad(self):
-        self.master.destroy()
+        if self.text_area.get("1.0", "end-1c") != '':
+            response = messagebox.askyesnocancel("Save Changes?", "Do you want to save changes to the current file?")
+            if response is True:
+                self.save_file()
+                self.master.destroy()
+            elif response is False:
+                self.master.destroy()
+        else:
+            self.master.destroy()
+
         
     def about_notepad(self):
         messagebox.showinfo("About Notepad", "This is a simple text editor written in Python using Tkinter extension.")
